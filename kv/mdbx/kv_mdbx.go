@@ -50,6 +50,7 @@ const NonExistingDBI kv.DBI = 999_999_999
 
 type TableCfgFunc func(defaultBuckets kv.TableCfg) kv.TableCfg
 
+// TODO(AD): Remove chaindata specific
 func WithChaindataTables(defaultBuckets kv.TableCfg) kv.TableCfg {
 	return defaultBuckets
 }
@@ -79,7 +80,7 @@ const DefaultGrowthStep = 512 * datasize.MB
 
 func NewMDBX(log log.Logger) MdbxOpts {
 	opts := MdbxOpts{
-		bucketsCfg: WithChaindataTables,
+		bucketsCfg: nil,
 		flags:      mdbx.NoReadahead | mdbx.Coalesce | mdbx.Durable,
 		log:        log,
 		pageSize:   kv.DefaultPageSize(),
@@ -317,6 +318,7 @@ func (opts MdbxOpts) Open(ctx context.Context) (kv.RwDB, error) {
 		if err != nil {
 			return nil, err
 		}
+		// TODO(AD): Remove chaindata specific
 		if opts.label == kv.ChainDB {
 			if err = env.SetOption(mdbx.OptTxnDpInitial, txnDpInitial*2); err != nil {
 				return nil, err
@@ -343,10 +345,12 @@ func (opts MdbxOpts) Open(ctx context.Context) (kv.RwDB, error) {
 			dirtySpace = opts.dirtySpace
 		} else {
 			dirtySpace = mmap.TotalMemory() / 42 // it's default of mdbx, but our package also supports cgroups and GOMEMLIMIT
+			// TODO(AD): Remove chaindata specific
 			// clamp to max size
 			const dirtySpaceMaxChainDB = uint64(1 * datasize.GB)
 			const dirtySpaceMaxDefault = uint64(128 * datasize.MB)
 
+			// TODO(AD): Remove chaindata specific
 			if opts.label == kv.ChainDB && dirtySpace > dirtySpaceMaxChainDB {
 				dirtySpace = dirtySpaceMaxChainDB
 			} else if opts.label != kv.ChainDB && dirtySpace > dirtySpaceMaxDefault {
@@ -707,6 +711,7 @@ func (tx *MdbxTx) IsRo() bool     { return tx.readOnly }
 func (tx *MdbxTx) ViewID() uint64 { return tx.tx.ID() }
 
 func (tx *MdbxTx) CollectMetrics() {
+	// TODO(AD): Remove chaindata specific
 	if tx.db.opts.label != kv.ChainDB {
 		return
 	}

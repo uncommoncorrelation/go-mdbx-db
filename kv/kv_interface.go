@@ -81,6 +81,7 @@ const ReadersLimit = 32000 // MDBX_READERS_LIMIT=32767
 const Unlim int = -1
 
 var (
+	// TODO(AD): Remove chaindata specific
 	ErrAttemptToDeleteNonDeprecatedBucket = errors.New("only buckets from dbutils.ChaindataDeprecatedTables can be deleted")
 
 	DbSize    = metrics.GetOrCreateGauge(`db_size`)    //nolint
@@ -146,6 +147,8 @@ var (
 )
 
 type DBVerbosityLvl int8
+
+// TODO(AD): Refactor to runtime and DI instead of consts
 type Label uint8
 
 const (
@@ -525,30 +528,4 @@ type RwCursorDupSort interface {
 	DeleteCurrentDuplicates() error       // DeleteCurrentDuplicates - deletes all of the data items for the current key
 	DeleteExact(k1, k2 []byte) error      // DeleteExact - delete 1 value from given key
 	AppendDup(key, value []byte) error    // AppendDup - same as Append, but for sorted dup data
-}
-
-// ---- Temporal part
-
-type (
-	Domain      string
-	History     string
-	InvertedIdx string
-)
-
-type TemporalTx interface {
-	Tx
-	DomainGet(name Domain, k, k2 []byte) (v []byte, ok bool, err error)
-	DomainGetAsOf(name Domain, k, k2 []byte, ts uint64) (v []byte, ok bool, err error)
-	HistoryGet(name History, k []byte, ts uint64) (v []byte, ok bool, err error)
-
-	// IndexRange - return iterator over range of inverted index for given key `k`
-	// Asc semantic:  [from, to) AND from > to
-	// Desc semantic: [from, to) AND from < to
-	// Limit -1 means Unlimited
-	// from -1, to -1 means unbounded (StartOfTable, EndOfTable)
-	// Example: IndexRange("IndexName", 10, 5, order.Desc, -1)
-	// Example: IndexRange("IndexName", -1, -1, order.Asc, 10)
-	IndexRange(name InvertedIdx, k []byte, fromTs, toTs int, asc order.By, limit int) (timestamps iter.U64, err error)
-	HistoryRange(name History, fromTs, toTs int, asc order.By, limit int) (it iter.KV, err error)
-	DomainRange(name Domain, fromKey, toKey []byte, ts uint64, asc order.By, limit int) (it iter.KV, err error)
 }
