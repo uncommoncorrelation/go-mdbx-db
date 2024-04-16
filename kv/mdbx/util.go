@@ -23,8 +23,8 @@ import (
 	"github.com/uncommoncorrelation/go-mdbx-db/kv"
 )
 
-func MustOpen(path string) kv.RwDB {
-	db, err := Open(context.Background(), path, log.New(), false)
+func MustOpen(path string, tblConfig kv.TableCfg) kv.RwDB {
+	db, err := Open(context.Background(), path, log.New(), false, tblConfig)
 	if err != nil {
 		panic(err)
 	}
@@ -32,10 +32,10 @@ func MustOpen(path string) kv.RwDB {
 }
 
 // Open - main method to open database.
-func Open(ctx context.Context, path string, logger log.Logger, accede bool) (kv.RwDB, error) {
+func Open(ctx context.Context, path string, logger log.Logger, accede bool, tblConfig kv.TableCfg) (kv.RwDB, error) {
 	var db kv.RwDB
 	var err error
-	opts := NewMDBX(logger).Path(path)
+	opts := NewMDBX(logger).Path(path).WithTableCfg(tblConfig)
 	if accede {
 		opts = opts.Accede()
 	}

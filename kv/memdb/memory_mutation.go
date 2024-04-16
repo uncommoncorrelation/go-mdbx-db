@@ -33,6 +33,7 @@ type MemoryMutation struct {
 	clearedTables    map[string]struct{}
 	db               kv.Tx
 	statelessCursors map[string]kv.RwCursor
+	tblConfig        kv.TableCfg
 }
 
 // NewMemoryBatch - starts in-mem batch
@@ -43,8 +44,8 @@ type MemoryMutation struct {
 // defer batch.Rollback()
 // ... some calculations on `batch`
 // batch.Commit()
-func NewMemoryBatch(tx kv.Tx, tmpDir string) *MemoryMutation {
-	tmpDB := mdbx.NewMDBX(log.New()).InMem(tmpDir).MustOpen()
+func NewMemoryBatch(tx kv.Tx, tmpDir string, tblConfig kv.TableCfg) *MemoryMutation {
+	tmpDB := mdbx.NewMDBX(log.New()).InMem(tmpDir).WithTableCfg(tblConfig).MustOpen()
 	memTx, err := tmpDB.BeginRw(context.Background())
 	if err != nil {
 		panic(err)
@@ -59,16 +60,18 @@ func NewMemoryBatch(tx kv.Tx, tmpDir string) *MemoryMutation {
 		memTx:          memTx,
 		deletedEntries: make(map[string]map[string]struct{}),
 		clearedTables:  make(map[string]struct{}),
+		tblConfig:      tblConfig,
 	}
 }
 
-func NewMemoryBatchWithCustomDB(tx kv.Tx, db kv.RwDB, uTx kv.RwTx, tmpDir string) *MemoryMutation {
+func NewMemoryBatchWithCustomDB(tx kv.Tx, db kv.RwDB, uTx kv.RwTx, tmpDir string, tblConfig kv.TableCfg) *MemoryMutation {
 	return &MemoryMutation{
 		db:             tx,
 		memDb:          db,
 		memTx:          uTx,
 		deletedEntries: make(map[string]map[string]struct{}),
 		clearedTables:  make(map[string]struct{}),
+		tblConfig:      tblConfig,
 	}
 }
 

@@ -47,6 +47,7 @@ type memoryMutationCursor struct {
 	currentDbEntry  cursorEntry
 	currentMemEntry cursorEntry
 	isPrevFromDb    bool
+	TableConfig     kv.TableCfg
 }
 
 func (m *memoryMutationCursor) isTableCleared() bool {

@@ -203,8 +203,15 @@ func (opts MdbxOpts) WriteMergeThreshold(v uint64) MdbxOpts {
 	return opts
 }
 
-func (opts MdbxOpts) WithTableCfg(f TableCfgFunc) MdbxOpts {
+func (opts MdbxOpts) WithTableCfgFn(f TableCfgFunc) MdbxOpts {
 	opts.bucketsCfg = f
+	return opts
+}
+func (opts MdbxOpts) WithTableCfg(tblConfig kv.TableCfg) MdbxOpts {
+	opts.bucketsCfg = func(_ kv.TableCfg) kv.TableCfg {
+		return tblConfig
+	}
+
 	return opts
 }
 
