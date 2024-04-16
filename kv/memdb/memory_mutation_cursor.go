@@ -131,7 +131,7 @@ func (m *memoryMutationCursor) getNextOnDb(t NextType) (key []byte, value []byte
 }
 
 func (m *memoryMutationCursor) convertAutoDupsort(key []byte, value []byte) []byte {
-	config, ok := kv.ChaindataTablesCfg[m.table]
+	config, ok := m.TableConfig[m.table]
 	// If we do not have the configuration we assume it is not dupsorted
 	if !ok || !config.AutoDupSortKeysConversion {
 		return key
@@ -153,7 +153,7 @@ func (m *memoryMutationCursor) Current() ([]byte, []byte, error) {
 func (m *memoryMutationCursor) skipIntersection(memKey, memValue, dbKey, dbValue []byte, t NextType) (newDbKey []byte, newDbValue []byte, err error) {
 	newDbKey = dbKey
 	newDbValue = dbValue
-	config, ok := kv.ChaindataTablesCfg[m.table]
+	config, ok := m.TableConfig[m.table]
 	dupSortTable := ok && ((config.Flags & kv.DupSort) != 0)
 	autoKeyConversion := ok && config.AutoDupSortKeysConversion
 	dupsortOffset := 0
@@ -345,7 +345,7 @@ func (m *memoryMutationCursor) DeleteExact(_, _ []byte) error {
 }
 
 func (m *memoryMutationCursor) DeleteCurrentDuplicates() error {
-	config, ok := kv.ChaindataTablesCfg[m.table]
+	config, ok := m.TableConfig[m.table]
 	autoKeyConversion := ok && config.AutoDupSortKeysConversion
 	if autoKeyConversion {
 		panic("DeleteCurrentDuplicates Not implemented for AutoDupSortKeysConversion tables")

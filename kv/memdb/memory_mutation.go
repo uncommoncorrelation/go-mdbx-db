@@ -344,7 +344,7 @@ func (m *MemoryMutation) Flush(tx kv.RwTx) error {
 	}
 	// Iterate over each bucket and apply changes accordingly.
 	for _, bucket := range buckets {
-		if isTablePurelyDupsort(bucket) {
+		if m.isTablePurelyDupsort(bucket) {
 			cbucket, err := m.memTx.CursorDupSort(bucket)
 			if err != nil {
 				return err
@@ -404,7 +404,7 @@ func (m *MemoryMutation) Diff() (*MemoryDiff, error) {
 	}
 	// Iterate over each bucket and apply changes accordingly.
 	for _, bucket := range buckets {
-		if isTablePurelyDupsort(bucket) {
+		if m.isTablePurelyDupsort(bucket) {
 			cbucket, err := m.memTx.CursorDupSort(bucket)
 			if err != nil {
 				return nil, err
@@ -449,8 +449,8 @@ func (m *MemoryMutation) Diff() (*MemoryDiff, error) {
 }
 
 // Check if a bucket is dupsorted and has dupsort conversion off
-func isTablePurelyDupsort(bucket string) bool {
-	config, ok := kv.ChaindataTablesCfg[bucket]
+func (m *MemoryMutation) isTablePurelyDupsort(bucket string) bool {
+	config, ok := m.tblConfig[bucket]
 	// If we do not have the configuration we assume it is not dupsorted
 	if !ok {
 		return false
