@@ -74,8 +74,8 @@ type MdbxOpts struct {
 	inMem           bool
 }
 
-const DefaultMapSize = 2 * datasize.TB
-const DefaultGrowthStep = 2 * datasize.GB
+const DefaultMapSize = datasize.GB
+const DefaultGrowthStep = 512 * datasize.MB
 
 func NewMDBX(log log.Logger) MdbxOpts {
 	opts := MdbxOpts{
@@ -151,7 +151,7 @@ func (opts MdbxOpts) InMem(tmpDir string, prefix ...string) MdbxOpts {
 	opts.inMem = true
 	opts.flags = mdbx.UtterlyNoSync | mdbx.NoMetaSync | mdbx.NoMemInit
 	opts.growthStep = 2 * datasize.MB
-	opts.mapSize = 512 * datasize.MB
+	opts.mapSize = 128 * datasize.MB
 	opts.dirtySpace = uint64(128 * datasize.MB)
 	opts.shrinkThreshold = 0 // disable
 	opts.label = kv.InMem
@@ -373,11 +373,7 @@ func (opts MdbxOpts) Open(ctx context.Context) (kv.RwDB, error) {
 
 	opts.pageSize = uint64(in.PageSize)
 	opts.mapSize = datasize.ByteSize(in.MapSize)
-	if opts.label == kv.ChainDB {
-		opts.log.Info("[db] open", "lable", opts.label, "sizeLimit", opts.mapSize, "pageSize", opts.pageSize)
-	} else {
-		opts.log.Debug("[db] open", "lable", opts.label, "sizeLimit", opts.mapSize, "pageSize", opts.pageSize)
-	}
+	opts.log.Info("[db] open", "lable", opts.label, "sizeLimit", opts.mapSize, "pageSize", opts.pageSize)
 
 	dirtyPagesLimit, err := env.GetOption(mdbx.OptTxnDpLimit)
 	if err != nil {
@@ -415,7 +411,7 @@ func (opts MdbxOpts) Open(ctx context.Context) (kv.RwDB, error) {
 		leakDetector: dbg.NewLeakDetector("db."+opts.label.String(), dbg.SlowTx()),
 	}
 
-	customBuckets := opts.bucketsCfg(kv.ChaindataTablesCfg)
+	customBuckets := opts.bucketsCfg(kv.TableCfg{})
 	for name, cfg := range customBuckets { // copy map to avoid changing global variable
 		db.buckets[name] = cfg
 	}
@@ -920,22 +916,25 @@ func (tx *MdbxTx) Commit() error {
 		return fmt.Errorf("lable: %s, %w", tx.db.opts.label, err)
 	}
 
-	if tx.db.opts.label == kv.ChainDB {
-		kv.DbCommitPreparation.Observe(latency.Preparation.Seconds())
-		//kv.DbCommitAudit.Update(latency.Audit.Seconds())
-		kv.DbCommitWrite.Observe(latency.Write.Seconds())
-		kv.DbCommitSync.Observe(latency.Sync.Seconds())
-		kv.DbCommitEnding.Observe(latency.Ending.Seconds())
-		kv.DbCommitTotal.Observe(latency.Whole.Seconds())
+	// AD: Added logging for commit latency, may need further guarding to prevent performance impact
+	//     preserved original code for reference
+	log.Debug("tx commit", "label", tx.db.opts.label, "latency", latency)
+	// if tx.db.opts.label == kv.ChainDB {
+	// 	kv.DbCommitPreparation.Observe(latency.Preparation.Seconds())
+	// 	//kv.DbCommitAudit.Update(latency.Audit.Seconds())
+	// 	kv.DbCommitWrite.Observe(latency.Write.Seconds())
+	// 	kv.DbCommitSync.Observe(latency.Sync.Seconds())
+	// 	kv.DbCommitEnding.Observe(latency.Ending.Seconds())
+	// 	kv.DbCommitTotal.Observe(latency.Whole.Seconds())
 
-		//kv.DbGcWorkPnlMergeTime.Update(latency.GCDetails.WorkPnlMergeTime.Seconds())
-		//kv.DbGcWorkPnlMergeVolume.Set(uint64(latency.GCDetails.WorkPnlMergeVolume))
-		//kv.DbGcWorkPnlMergeCalls.Set(uint64(latency.GCDetails.WorkPnlMergeCalls))
-		//
-		//kv.DbGcSelfPnlMergeTime.Update(latency.GCDetails.SelfPnlMergeTime.Seconds())
-		//kv.DbGcSelfPnlMergeVolume.Set(uint64(latency.GCDetails.SelfPnlMergeVolume))
-		//kv.DbGcSelfPnlMergeCalls.Set(uint64(latency.GCDetails.SelfPnlMergeCalls))
-	}
+	// 	//kv.DbGcWorkPnlMergeTime.Update(latency.GCDetails.WorkPnlMergeTime.Seconds())
+	// 	//kv.DbGcWorkPnlMergeVolume.Set(uint64(latency.GCDetails.WorkPnlMergeVolume))
+	// 	//kv.DbGcWorkPnlMergeCalls.Set(uint64(latency.GCDetails.WorkPnlMergeCalls))
+	// 	//
+	// 	//kv.DbGcSelfPnlMergeTime.Update(latency.GCDetails.SelfPnlMergeTime.Seconds())
+	// 	//kv.DbGcSelfPnlMergeVolume.Set(uint64(latency.GCDetails.SelfPnlMergeVolume))
+	// 	//kv.DbGcSelfPnlMergeCalls.Set(uint64(latency.GCDetails.SelfPnlMergeCalls))
+	// }
 
 	return nil
 }
@@ -955,7 +954,7 @@ func (tx *MdbxTx) Rollback() {
 		tx.db.leakDetector.Del(tx.id)
 	}()
 	tx.closeCursors()
-	//tx.printDebugInfo()
+	// tx.printDebugInfo()
 	tx.tx.Abort()
 }
 
