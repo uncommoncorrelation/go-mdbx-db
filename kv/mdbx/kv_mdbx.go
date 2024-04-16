@@ -131,13 +131,19 @@ func (opts MdbxOpts) Set(opt MdbxOpts) MdbxOpts {
 	return opt
 }
 
-func (opts MdbxOpts) InMem(tmpDir string) MdbxOpts {
+func (opts MdbxOpts) InMem(tmpDir string, prefix ...string) MdbxOpts {
+	var prefixStr = "go-mdbx-memdb-"
+	if len(prefix) > 0 && prefix[0] != "" {
+		prefixStr = prefix[0]
+	}
+
 	if tmpDir != "" {
 		if err := os.MkdirAll(tmpDir, 0755); err != nil {
 			panic(err)
 		}
 	}
-	path, err := os.MkdirTemp(tmpDir, "erigon-memdb-")
+
+	path, err := os.MkdirTemp(tmpDir, prefixStr)
 	if err != nil {
 		panic(err)
 	}
