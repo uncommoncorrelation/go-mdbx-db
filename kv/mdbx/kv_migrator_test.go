@@ -1,4 +1,4 @@
-//go:build !windows
+//go:build !windows && erigon
 
 /*
 Copyright 2021 Erigon contributors
@@ -19,93 +19,28 @@ package mdbx_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
 	"github.com/c2h5oh/datasize"
 	"github.com/ledgerwatch/log/v3"
 	"github.com/stretchr/testify/require"
+
 	"github.com/uncommoncorrelation/go-mdbx-db/kv"
 	"github.com/uncommoncorrelation/go-mdbx-db/kv/mdbx"
-	"github.com/uncommoncorrelation/go-mdbx-db/kv/memdb"
 )
-
-func TestBucketCRUD(t *testing.T) {
-	require := require.New(t)
-	db, tx := memdb.NewTestTx(t)
-
-	normalBucket := kv.ChaindataTables[15]
-	deprecatedBucket := kv.ChaindataDeprecatedTables[0]
-	migrator := tx
-
-	// check thad buckets have unique DBI's
-	uniquness := map[kv.DBI]bool{}
-	castedKv, ok := db.(*mdbx.MdbxKV)
-	if !ok {
-		t.Skip()
-	}
-	for _, dbi := range castedKv.AllDBI() {
-		if dbi == mdbx.NonExistingDBI {
-			continue
-		}
-		_, ok := uniquness[dbi]
-		require.False(ok)
-		uniquness[dbi] = true
-	}
-
-	require.True(migrator.ExistsBucket(normalBucket))
-	require.True(errors.Is(migrator.DropBucket(normalBucket), kv.ErrAttemptToDeleteNonDeprecatedBucket))
-
-	require.False(migrator.ExistsBucket(deprecatedBucket))
-	require.NoError(migrator.CreateBucket(deprecatedBucket))
-	require.True(migrator.ExistsBucket(deprecatedBucket))
-
-	require.NoError(migrator.DropBucket(deprecatedBucket))
-	require.False(migrator.ExistsBucket(deprecatedBucket))
-
-	require.NoError(migrator.CreateBucket(deprecatedBucket))
-	require.True(migrator.ExistsBucket(deprecatedBucket))
-
-	c, err := tx.RwCursor(deprecatedBucket)
-	require.NoError(err)
-	err = c.Put([]byte{1}, []byte{1})
-	require.NoError(err)
-	v, err := tx.GetOne(deprecatedBucket, []byte{1})
-	require.NoError(err)
-	require.Equal([]byte{1}, v)
-
-	buckets, err := migrator.ListBuckets()
-	require.NoError(err)
-	require.True(len(buckets) > 10)
-
-	// check thad buckets have unique DBI's
-	uniquness = map[kv.DBI]bool{}
-	for _, dbi := range castedKv.AllDBI() {
-		if dbi == mdbx.NonExistingDBI {
-			continue
-		}
-		_, ok := uniquness[dbi]
-		require.False(ok)
-		uniquness[dbi] = true
-	}
-}
 
 func TestReadOnlyMode(t *testing.T) {
 	path := t.TempDir()
 	logger := log.New()
-	db1 := mdbx.NewMDBX(logger).Path(path).MapSize(16 * datasize.MB).WithTableCfg(func(defaultBuckets kv.TableCfg) kv.TableCfg {
-		return kv.TableCfg{
-			kv.Headers: kv.TableCfgItem{},
-		}
+	db1 := mdbx.NewMDBX(logger).Path(path).MapSize(16 * datasize.MB).WithTableCfg(kv.TableCfg{
+		kv.Headers: kv.TableCfgItem{},
 	}).MustOpen()
 	db1.Close()
 	time.Sleep(10 * time.Millisecond) // win sometime need time to close file
 
-	db2 := mdbx.NewMDBX(logger).Readonly().Path(path).MapSize(16 * datasize.MB).WithTableCfg(func(defaultBuckets kv.TableCfg) kv.TableCfg {
-		return kv.TableCfg{
-			kv.Headers: kv.TableCfgItem{},
-		}
+	db2 := mdbx.NewMDBX(logger).Readonly().Path(path).MapSize(16 * datasize.MB).WithTableCfg(kv.TableCfg{
+		kv.Headers: kv.TableCfgItem{},
 	}).MustOpen()
 	defer db2.Close()
 

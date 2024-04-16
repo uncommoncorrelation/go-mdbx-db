@@ -1,3 +1,5 @@
+//go:build erigon
+
 /*
    Copyright 2021 Erigon contributors
 
@@ -36,7 +38,7 @@ func NewTemporaryMdbx(ctx context.Context, tempdir string) (kv.RwDB, error) {
 		return &TemporaryMdbx{}, err
 	}
 
-	db, err := NewMDBX(log.New()).Label(kv.InMem).Path(path).Open(ctx)
+	db, err := NewMDBX(log.New()).Label(kv.InMem).Path(path).WithTableCfg(kv.ChaindataTablesCfg).Open(ctx)
 	if err != nil {
 		return &TemporaryMdbx{}, err
 	}

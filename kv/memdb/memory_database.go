@@ -1,3 +1,5 @@
+//go:build erigon
+
 /*
    Copyright 2021 Erigon contributors
 
