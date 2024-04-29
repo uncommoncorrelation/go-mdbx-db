@@ -37,6 +37,20 @@ const (
 	Sequence = "Sequence" // tbl_name -> seq_u64
 )
 
+var DefaultTableCfg = TableCfg{
+	Sequence: {},
+}
+
+func MergeTableCfg(cfgs ...TableCfg) TableCfg {
+	res := make(TableCfg)
+	for _, cfg := range cfgs {
+		for k, v := range cfg {
+			res[k] = v
+		}
+	}
+	return res
+}
+
 type TableCfgItem struct {
 	Flags TableFlags
 	// AutoDupSortKeysConversion - enables some keys transformation - to change db layout without changing app code.

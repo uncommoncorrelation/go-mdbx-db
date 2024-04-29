@@ -27,6 +27,7 @@ import (
 )
 
 var (
+	// TODO(AD): Remove chaindata specific
 	// force skipping of any non-Erigon2 .torrent files
 	DownloaderOnlyBlocks = EnvBool("DOWNLOADER_ONLY_BLOCKS", false)
 )
