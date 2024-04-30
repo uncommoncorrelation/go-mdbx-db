@@ -21,20 +21,19 @@ import (
 	"testing"
 
 	"github.com/c2h5oh/datasize"
-	"github.com/ledgerwatch/log/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/uncommoncorrelation/go-mdbx-db/kv"
 	"github.com/uncommoncorrelation/go-mdbx-db/kv/order"
+	"github.com/uncommoncorrelation/go-mdbx-db/log"
 )
 
 func BaseCase(t *testing.T) (kv.RwDB, kv.RwTx, kv.RwCursorDupSort) {
 	t.Helper()
 	path := t.TempDir()
-	logger := log.New()
 	table := "Table"
-	db := NewMDBX(logger).InMem(path).WithTableCfgFn(func(_ kv.TableCfg) kv.TableCfg {
+	db := NewMDBX(log.NewNoop()).InMem(path).WithTableCfgFn(func(_ kv.TableCfg) kv.TableCfg {
 		return kv.TableCfg{
 			table:       kv.TableCfgItem{Flags: kv.DupSort},
 			kv.Sequence: kv.TableCfgItem{},

@@ -17,13 +17,13 @@ import (
 	"bytes"
 	"context"
 
-	"github.com/ledgerwatch/log/v3"
 	"github.com/uncommoncorrelation/go-mdbx-db/common"
 	"github.com/uncommoncorrelation/go-mdbx-db/kv/iter"
 	"github.com/uncommoncorrelation/go-mdbx-db/kv/order"
 
 	"github.com/uncommoncorrelation/go-mdbx-db/kv"
 	"github.com/uncommoncorrelation/go-mdbx-db/kv/mdbx"
+	"github.com/uncommoncorrelation/go-mdbx-db/log"
 )
 
 type MemoryMutation struct {
@@ -45,7 +45,7 @@ type MemoryMutation struct {
 // ... some calculations on `batch`
 // batch.Commit()
 func NewMemoryBatch(tx kv.Tx, tmpDir string, tblConfig kv.TableCfg) *MemoryMutation {
-	tmpDB := mdbx.NewMDBX(log.New()).InMem(tmpDir).WithTableCfg(tblConfig).MustOpen()
+	tmpDB := mdbx.NewMDBX(log.NewNoop()).InMem(tmpDir).WithTableCfg(tblConfig).MustOpen()
 	memTx, err := tmpDB.BeginRw(context.Background())
 	if err != nil {
 		panic(err)

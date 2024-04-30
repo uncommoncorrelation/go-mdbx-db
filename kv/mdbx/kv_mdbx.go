@@ -34,7 +34,6 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/erigontech/mdbx-go/mdbx"
 	stack2 "github.com/go-stack/stack"
-	"github.com/ledgerwatch/log/v3"
 	"golang.org/x/exp/maps"
 	"golang.org/x/sync/semaphore"
 
@@ -43,6 +42,7 @@ import (
 	"github.com/uncommoncorrelation/go-mdbx-db/kv"
 	"github.com/uncommoncorrelation/go-mdbx-db/kv/iter"
 	"github.com/uncommoncorrelation/go-mdbx-db/kv/order"
+	"github.com/uncommoncorrelation/go-mdbx-db/log"
 	"github.com/uncommoncorrelation/go-mdbx-db/mmap"
 )
 
@@ -245,19 +245,19 @@ func PathDbMap() map[string]kv.RoDB {
 var ErrDBDoesNotExists = fmt.Errorf("can't create database - because opening in `Accede` mode. probably another (main) process can create it")
 
 func (opts MdbxOpts) Open(ctx context.Context) (kv.RwDB, error) {
-	if dbg.WriteMap() {
+	if dbg.WriteMap(ctx) {
 		opts = opts.WriteMap() //nolint
 	}
-	if dbg.DirtySpace() > 0 {
-		opts = opts.DirtySpace(dbg.DirtySpace()) //nolint
+	if dbg.DirtySpace(ctx) > 0 {
+		opts = opts.DirtySpace(dbg.DirtySpace(ctx)) //nolint
 	}
-	if dbg.NoSync() {
+	if dbg.NoSync(ctx) {
 		opts = opts.Flags(func(u uint) uint { return u | mdbx.SafeNoSync }) //nolint
 	}
-	if dbg.MergeTr() > 0 {
-		opts = opts.WriteMergeThreshold(uint64(dbg.MergeTr() * 8192)) //nolint
+	if dbg.MergeTr(ctx) > 0 {
+		opts = opts.WriteMergeThreshold(uint64(dbg.MergeTr(ctx) * 8192)) //nolint
 	}
-	if dbg.MdbxReadAhead() {
+	if dbg.MdbxReadAhead(ctx) {
 		opts = opts.Flags(func(u uint) uint { return u &^ mdbx.NoReadahead }) //nolint
 	}
 	if opts.flags&mdbx.Accede != 0 || opts.flags&mdbx.Readonly != 0 {
@@ -417,7 +417,7 @@ func (opts MdbxOpts) Open(ctx context.Context) (kv.RwDB, error) {
 		txsCountMutex:         txsCountMutex,
 		txsAllDoneOnCloseCond: sync.NewCond(txsCountMutex),
 
-		leakDetector: dbg.NewLeakDetector("db."+opts.label.String(), dbg.SlowTx()),
+		leakDetector: dbg.NewLeakDetector(ctx, "db."+opts.label.String(), dbg.SlowTx(ctx)),
 	}
 
 	customBuckets := opts.bucketsCfg(kv.TableCfg{})
@@ -931,7 +931,7 @@ func (tx *MdbxTx) Commit() error {
 
 	// AD: Added logging for commit latency, may need further guarding to prevent performance impact
 	//     preserved original code for reference
-	log.Debug("tx commit", "label", tx.db.opts.label, "latency", latency)
+	log.FromContext(tx.ctx).Debug("tx commit", "label", tx.db.opts.label, "latency", latency)
 	// if tx.db.opts.label == kv.ChainDB {
 	// 	kv.DbCommitPreparation.Observe(latency.Preparation.Seconds())
 	// 	//kv.DbCommitAudit.Update(latency.Audit.Seconds())

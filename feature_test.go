@@ -5,17 +5,16 @@ import (
 	"testing"
 
 	"github.com/c2h5oh/datasize"
-	"github.com/ledgerwatch/log/v3"
 	"github.com/stretchr/testify/require"
 
 	"github.com/uncommoncorrelation/go-mdbx-db/kv"
 	"github.com/uncommoncorrelation/go-mdbx-db/kv/mdbx"
+	"github.com/uncommoncorrelation/go-mdbx-db/log"
 )
 
 func TestIncrementSequence(t *testing.T) {
 	path := t.TempDir()
-	logger := log.New()
-	db := mdbx.NewMDBX(logger).InMem(path).WithTableCfg(kv.DefaultTableCfg).MapSize(128 * datasize.MB).MustOpen()
+	db := mdbx.NewMDBX(log.NewNoop()).InMem(path).WithTableCfg(kv.DefaultTableCfg).MapSize(128 * datasize.MB).MustOpen()
 	t.Cleanup(db.Close)
 
 	tx, err := db.BeginRw(context.Background())
@@ -33,8 +32,7 @@ func TestIncrementSequence(t *testing.T) {
 func BenchmarkIncrementSequence(b *testing.B) {
 	b.StopTimer()
 	path := b.TempDir()
-	logger := log.New()
-	db := mdbx.NewMDBX(logger).InMem(path).WithTableCfg(kv.DefaultTableCfg).MapSize(128 * datasize.MB).MustOpen()
+	db := mdbx.NewMDBX(log.NewNoop()).InMem(path).WithTableCfg(kv.DefaultTableCfg).MapSize(128 * datasize.MB).MustOpen()
 	b.Cleanup(db.Close)
 
 	tx, err := db.BeginRw(context.Background())
@@ -57,8 +55,7 @@ func BenchmarkIncrementSequence(b *testing.B) {
 func BenchmarkConstantPut(b *testing.B) {
 	b.StopTimer()
 	path := b.TempDir()
-	logger := log.New()
-	db := mdbx.NewMDBX(logger).InMem(path).WithTableCfg(kv.TableCfg{
+	db := mdbx.NewMDBX(log.NewNoop()).InMem(path).WithTableCfg(kv.TableCfg{
 		"putTest": {},
 	}).MapSize(256 * datasize.MB).MustOpen()
 	b.Cleanup(db.Close)

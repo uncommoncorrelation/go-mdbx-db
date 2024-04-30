@@ -23,8 +23,8 @@ import (
 	"os"
 	"unsafe"
 
-	"github.com/ledgerwatch/log/v3"
 	"github.com/uncommoncorrelation/go-mdbx-db/kv"
+	"github.com/uncommoncorrelation/go-mdbx-db/log"
 )
 
 type TemporaryMdbx struct {
@@ -38,7 +38,7 @@ func NewTemporaryMdbx(ctx context.Context, tempdir string) (kv.RwDB, error) {
 		return &TemporaryMdbx{}, err
 	}
 
-	db, err := NewMDBX(log.New()).Label(kv.InMem).Path(path).WithTableCfg(kv.ChaindataTablesCfg).Open(ctx)
+	db, err := NewMDBX(log.Noop()).Label(kv.InMem).Path(path).WithTableCfg(kv.ChaindataTablesCfg).Open(ctx)
 	if err != nil {
 		return &TemporaryMdbx{}, err
 	}

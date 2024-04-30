@@ -1,16 +1,15 @@
 package dbg
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/ledgerwatch/log/v3"
+	"github.com/uncommoncorrelation/go-mdbx-db/log"
 )
-
-const FileCloseLogLevel = log.LvlTrace
 
 // LeakDetector - use it to find which resource was created but not closed (leaked)
 // periodically does print in logs resources which living longer than 1min with their creation stack trace
@@ -29,7 +28,9 @@ type LeakDetectorItem struct {
 	started time.Time
 }
 
-func NewLeakDetector(name string, slowThreshold time.Duration) *LeakDetector {
+func NewLeakDetector(ctx context.Context, name string, slowThreshold time.Duration) *LeakDetector {
+	logger := log.FromContext(ctx)
+
 	enabled := slowThreshold > 0
 	if !enabled {
 		return nil
@@ -46,7 +47,7 @@ func NewLeakDetector(name string, slowThreshold time.Duration) *LeakDetector {
 				select {
 				case <-logEvery.C:
 					if list := d.slowList(); len(list) > 0 {
-						log.Info(fmt.Sprintf("[dbg.%s] long living resources", name), "list", strings.Join(d.slowList(), ", "))
+						logger.Info(fmt.Sprintf("[dbg.%s] long living resources", name), "list", strings.Join(d.slowList(), ", "))
 					}
 				}
 			}

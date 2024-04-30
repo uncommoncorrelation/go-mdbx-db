@@ -17,13 +17,14 @@
 package dbg
 
 import (
+	"context"
 	"os"
 	"runtime"
 	"strconv"
 	"sync"
 	"time"
 
-	"github.com/ledgerwatch/log/v3"
+	"github.com/uncommoncorrelation/go-mdbx-db/log"
 )
 
 var (
@@ -55,12 +56,12 @@ var (
 	writeMapOnce sync.Once
 )
 
-func WriteMap() bool {
+func WriteMap(ctx context.Context) bool {
 	writeMapOnce.Do(func() {
 		v, _ := os.LookupEnv("WRITE_MAP")
 		if v == "true" {
 			writeMap = true
-			log.Info("[Experiment]", "WRITE_MAP", writeMap)
+			log.FromContext(ctx).Info("[Experiment]", "WRITE_MAP", writeMap)
 		}
 	})
 	return writeMap
@@ -71,7 +72,7 @@ var (
 	dirtySaceOnce sync.Once
 )
 
-func DirtySpace() uint64 {
+func DirtySpace(ctx context.Context) uint64 {
 	dirtySaceOnce.Do(func() {
 		v, _ := os.LookupEnv("MDBX_DIRTY_SPACE_MB")
 		if v != "" {
@@ -80,7 +81,7 @@ func DirtySpace() uint64 {
 				panic(err)
 			}
 			dirtySace = uint64(i * 1024 * 1024)
-			log.Info("[Experiment]", "MDBX_DIRTY_SPACE_MB", dirtySace)
+			log.FromContext(ctx).Info("[Experiment]", "MDBX_DIRTY_SPACE_MB", dirtySace)
 		}
 	})
 	return dirtySace
@@ -91,12 +92,12 @@ var (
 	noSyncOnce sync.Once
 )
 
-func NoSync() bool {
+func NoSync(ctx context.Context) bool {
 	noSyncOnce.Do(func() {
 		v, _ := os.LookupEnv("NO_SYNC")
 		if v == "true" {
 			noSync = true
-			log.Info("[Experiment]", "NO_SYNC", noSync)
+			log.FromContext(ctx).Info("[Experiment]", "NO_SYNC", noSync)
 		}
 	})
 	return noSync
@@ -107,7 +108,7 @@ var (
 	mergeTrOnce sync.Once
 )
 
-func MergeTr() int {
+func MergeTr(ctx context.Context) int {
 	mergeTrOnce.Do(func() {
 		v, _ := os.LookupEnv("MERGE_THRESHOLD")
 		if v != "" {
@@ -119,7 +120,7 @@ func MergeTr() int {
 				panic(i)
 			}
 			mergeTr = i
-			log.Info("[Experiment]", "MERGE_THRESHOLD", mergeTr)
+			log.FromContext(ctx).Info("[Experiment]", "MERGE_THRESHOLD", mergeTr)
 		}
 	})
 	return mergeTr
@@ -130,12 +131,12 @@ var (
 	mdbxReadaheadOnce sync.Once
 )
 
-func MdbxReadAhead() bool {
+func MdbxReadAhead(ctx context.Context) bool {
 	mdbxReadaheadOnce.Do(func() {
 		v, _ := os.LookupEnv("MDBX_READAHEAD")
 		if v == "true" {
 			mdbxReadahead = true
-			log.Info("[Experiment]", "MDBX_READAHEAD", mdbxReadahead)
+			log.FromContext(ctx).Info("[Experiment]", "MDBX_READAHEAD", mdbxReadahead)
 		}
 	})
 	return mdbxReadahead
@@ -146,12 +147,12 @@ var (
 	discardHistoryOnce sync.Once
 )
 
-func DiscardHistory() bool {
+func DiscardHistory(ctx context.Context) bool {
 	discardHistoryOnce.Do(func() {
 		v, _ := os.LookupEnv("DISCARD_HISTORY")
 		if v == "true" {
 			discardHistory = true
-			log.Info("[Experiment]", "DISCARD_HISTORY", discardHistory)
+			log.FromContext(ctx).Info("[Experiment]", "DISCARD_HISTORY", discardHistory)
 		}
 	})
 	return discardHistory
@@ -165,7 +166,7 @@ var (
 // DEBUG_BIG_RO_TX_KB - print logs with info about large read-only transactions
 // DEBUG_BIG_RW_TX_KB - print logs with info about large read-write transactions
 // DEBUG_SLOW_COMMIT_MS - print logs with commit timing details if commit is slower than this threshold
-func BigRoTxKb() uint {
+func BigRoTxKb(ctx context.Context) uint {
 	getBigRoTx.Do(func() {
 		v, _ := os.LookupEnv("DEBUG_BIG_RO_TX_KB")
 		if v != "" {
@@ -174,7 +175,7 @@ func BigRoTxKb() uint {
 				panic(err)
 			}
 			bigRoTx = uint(i)
-			log.Info("[Experiment]", "DEBUG_BIG_RO_TX_KB", bigRoTx)
+			log.FromContext(ctx).Info("[Experiment]", "DEBUG_BIG_RO_TX_KB", bigRoTx)
 		}
 	})
 	return bigRoTx
@@ -185,7 +186,7 @@ var (
 	getBigRwTx sync.Once
 )
 
-func BigRwTxKb() uint {
+func BigRwTxKb(ctx context.Context) uint {
 	getBigRwTx.Do(func() {
 		v, _ := os.LookupEnv("DEBUG_BIG_RW_TX_KB")
 		if v != "" {
@@ -194,7 +195,7 @@ func BigRwTxKb() uint {
 				panic(err)
 			}
 			bigRwTx = uint(i)
-			log.Info("[Experiment]", "DEBUG_BIG_RW_TX_KB", bigRwTx)
+			log.FromContext(ctx).Info("[Experiment]", "DEBUG_BIG_RW_TX_KB", bigRwTx)
 		}
 	})
 	return bigRwTx
@@ -205,7 +206,7 @@ var (
 	slowCommitOnce sync.Once
 )
 
-func SlowCommit() time.Duration {
+func SlowCommit(ctx context.Context) time.Duration {
 	slowCommitOnce.Do(func() {
 		v, _ := os.LookupEnv("SLOW_COMMIT")
 		if v != "" {
@@ -214,7 +215,7 @@ func SlowCommit() time.Duration {
 			if err != nil {
 				panic(err)
 			}
-			log.Info("[Experiment]", "SLOW_COMMIT", slowCommit.String())
+			log.FromContext(ctx).Info("[Experiment]", "SLOW_COMMIT", slowCommit.String())
 		}
 	})
 	return slowCommit
@@ -225,7 +226,7 @@ var (
 	slowTxOnce sync.Once
 )
 
-func SlowTx() time.Duration {
+func SlowTx(ctx context.Context) time.Duration {
 	slowTxOnce.Do(func() {
 		v, _ := os.LookupEnv("SLOW_TX")
 		if v != "" {
@@ -234,7 +235,7 @@ func SlowTx() time.Duration {
 			if err != nil {
 				panic(err)
 			}
-			log.Info("[Experiment]", "SLOW_TX", slowTx.String())
+			log.FromContext(ctx).Info("[Experiment]", "SLOW_TX", slowTx.String())
 		}
 	})
 	return slowTx
@@ -247,12 +248,12 @@ var (
 	stopAfterStageFlag  sync.Once
 )
 
-func StopBeforeStage() string {
+func StopBeforeStage(ctx context.Context) string {
 	f := func() {
 		v, _ := os.LookupEnv("STOP_BEFORE_STAGE") // see names in eth/stagedsync/stages/stages.go
 		if v != "" {
 			stopBeforeStage = v
-			log.Info("[Experiment]", "STOP_BEFORE_STAGE", stopBeforeStage)
+			log.FromContext(ctx).Info("[Experiment]", "STOP_BEFORE_STAGE", stopBeforeStage)
 		}
 	}
 	stopBeforeStageFlag.Do(f)
@@ -262,12 +263,12 @@ func StopBeforeStage() string {
 // TODO(allada) We should possibly consider removing `STOP_BEFORE_STAGE`, as `STOP_AFTER_STAGE` can
 // perform all same the functionality, but due to reverse compatibility reasons we are going to
 // leave it.
-func StopAfterStage() string {
+func StopAfterStage(ctx context.Context) string {
 	f := func() {
 		v, _ := os.LookupEnv("STOP_AFTER_STAGE") // see names in eth/stagedsync/stages/stages.go
 		if v != "" {
 			stopAfterStage = v
-			log.Info("[Experiment]", "STOP_AFTER_STAGE", stopAfterStage)
+			log.FromContext(ctx).Info("[Experiment]", "STOP_AFTER_STAGE", stopAfterStage)
 		}
 	}
 	stopAfterStageFlag.Do(f)
@@ -279,12 +280,12 @@ var (
 	stopAfterReconstOnce sync.Once
 )
 
-func StopAfterReconst() bool {
+func StopAfterReconst(ctx context.Context) bool {
 	stopAfterReconstOnce.Do(func() {
 		v, _ := os.LookupEnv("STOP_AFTER_RECONSTITUTE")
 		if v == "true" {
 			stopAfterReconst = true
-			log.Info("[Experiment]", "STOP_AFTER_RECONSTITUTE", stopAfterReconst)
+			log.FromContext(ctx).Info("[Experiment]", "STOP_AFTER_RECONSTITUTE", stopAfterReconst)
 		}
 	})
 	return stopAfterReconst
@@ -295,12 +296,12 @@ var (
 	snapshotVersionOnce sync.Once
 )
 
-func SnapshotVersion() uint8 {
+func SnapshotVersion(ctx context.Context) uint8 {
 	snapshotVersionOnce.Do(func() {
 		v, _ := os.LookupEnv("SNAPSHOT_VERSION")
 		if i, _ := strconv.ParseUint(v, 10, 8); i > 0 {
 			snapshotVersion = uint8(i)
-			log.Info("[Experiment]", "SNAPSHOT_VERSION", snapshotVersion)
+			log.FromContext(ctx).Info("[Experiment]", "SNAPSHOT_VERSION", snapshotVersion)
 		}
 	})
 	return snapshotVersion
@@ -311,12 +312,12 @@ var (
 	logHashMismatchReasonOnce sync.Once
 )
 
-func LogHashMismatchReason() bool {
+func LogHashMismatchReason(ctx context.Context) bool {
 	logHashMismatchReasonOnce.Do(func() {
 		v, _ := os.LookupEnv("LOG_HASH_MISMATCH_REASON")
 		if v == "true" {
 			logHashMismatchReason = true
-			log.Info("[Experiment]", "LOG_HASH_MISMATCH_REASON", logHashMismatchReason)
+			log.FromContext(ctx).Info("[Experiment]", "LOG_HASH_MISMATCH_REASON", logHashMismatchReason)
 		}
 	})
 	return logHashMismatchReason

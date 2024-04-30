@@ -19,12 +19,12 @@ package mdbx
 import (
 	"context"
 
-	"github.com/ledgerwatch/log/v3"
 	"github.com/uncommoncorrelation/go-mdbx-db/kv"
+	"github.com/uncommoncorrelation/go-mdbx-db/log"
 )
 
-func MustOpen(path string, tblConfig kv.TableCfg) kv.RwDB {
-	db, err := Open(context.Background(), path, log.New(), false, tblConfig)
+func MustOpen(path string, logger log.Logger, tblConfig kv.TableCfg) kv.RwDB {
+	db, err := Open(context.Background(), path, logger, false, tblConfig)
 	if err != nil {
 		panic(err)
 	}

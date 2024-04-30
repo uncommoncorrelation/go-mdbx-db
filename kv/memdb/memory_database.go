@@ -22,13 +22,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ledgerwatch/log/v3"
 	"github.com/uncommoncorrelation/go-mdbx-db/kv"
 	"github.com/uncommoncorrelation/go-mdbx-db/kv/mdbx"
+	"github.com/uncommoncorrelation/go-mdbx-db/log"
 )
 
 func New(tmpDir string, tblConfig kv.TableCfg) kv.RwDB {
-	return mdbx.NewMDBX(log.New()).InMem(tmpDir).WithTableCfg(tblConfig).MustOpen()
+	return mdbx.NewMDBX(log.Noop()).InMem(tmpDir).WithTableCfg(tblConfig).MustOpen()
 }
 
 func NewTestDB(tb testing.TB, tblConfig kv.TableCfg) kv.RwDB {
