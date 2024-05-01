@@ -19,7 +19,6 @@ package kv
 import (
 	"context"
 	"errors"
-	"fmt"
 	"unsafe"
 
 	"github.com/uncommoncorrelation/go-mdbx-db/kv/iter"
@@ -148,54 +147,11 @@ var (
 
 type DBVerbosityLvl int8
 
-// TODO(AD): Refactor to runtime and DI instead of consts
-type Label uint8
+type Label string
 
 const (
-	ChainDB      Label = 0
-	TxPoolDB     Label = 1
-	SentryDB     Label = 2
-	ConsensusDB  Label = 3
-	DownloaderDB Label = 4
-	InMem        Label = 5
+	InMem Label = "inMem"
 )
-
-func (l Label) String() string {
-	switch l {
-	case ChainDB:
-		return "chaindata"
-	case TxPoolDB:
-		return "txpool"
-	case SentryDB:
-		return "sentry"
-	case ConsensusDB:
-		return "consensus"
-	case DownloaderDB:
-		return "downloader"
-	case InMem:
-		return "inMem"
-	default:
-		return "unknown"
-	}
-}
-func UnmarshalLabel(s string) Label {
-	switch s {
-	case "chaindata":
-		return ChainDB
-	case "txpool":
-		return TxPoolDB
-	case "sentry":
-		return SentryDB
-	case "consensus":
-		return ConsensusDB
-	case "downloader":
-		return DownloaderDB
-	case "inMem":
-		return InMem
-	default:
-		panic(fmt.Sprintf("unexpected label: %s", s))
-	}
-}
 
 type Has interface {
 	// Has indicates whether a key exists in the database.
