@@ -50,29 +50,27 @@ const NonExistingDBI kv.DBI = 999_999_999
 
 type TableCfgFunc func(defaultBuckets kv.TableCfg) kv.TableCfg
 
-// TODO(AD): Remove chaindata specific
-func WithChaindataTables(defaultBuckets kv.TableCfg) kv.TableCfg {
-	return defaultBuckets
-}
+type EnvOptionsFunc func(opts MdbxOpts, env *mdbx.Env) error
 
 type MdbxOpts struct {
 	// must be in the range from 12.5% (almost empty) to 50% (half empty)
 	// which corresponds to the range from 8192 and to 32768 in units respectively
-	log             log.Logger
-	roTxsLimiter    *semaphore.Weighted
-	bucketsCfg      TableCfgFunc
-	path            string
-	syncPeriod      time.Duration
-	mapSize         datasize.ByteSize
-	growthStep      datasize.ByteSize
-	shrinkThreshold int
-	flags           uint
-	pageSize        uint64
-	dirtySpace      uint64 // if exeed this space, modified pages will `spill` to disk
-	mergeThreshold  uint64
-	verbosity       kv.DBVerbosityLvl
-	label           kv.Label // marker to distinct db instances - one process may open many databases. for example to collect metrics of only 1 database
-	inMem           bool
+	log               log.Logger
+	roTxsLimiter      *semaphore.Weighted
+	bucketsCfg        TableCfgFunc
+	path              string
+	syncPeriod        time.Duration
+	mapSize           datasize.ByteSize
+	growthStep        datasize.ByteSize
+	shrinkThreshold   int
+	flags             uint
+	pageSize          uint64
+	dirtySpace        uint64 // if exeed this space, modified pages will `spill` to disk
+	mergeThreshold    uint64
+	verbosity         kv.DBVerbosityLvl
+	label             kv.Label // marker to distinct db instances - one process may open many databases. for example to collect metrics of only 1 database
+	inMem             bool
+	customEnvOtionsFn EnvOptionsFunc
 }
 
 const DefaultMapSize = datasize.GB
@@ -213,11 +211,17 @@ func (opts MdbxOpts) WithTableCfgFn(f TableCfgFunc) MdbxOpts {
 	opts.bucketsCfg = f
 	return opts
 }
+
 func (opts MdbxOpts) WithTableCfg(tblConfig kv.TableCfg) MdbxOpts {
 	opts.bucketsCfg = func(_ kv.TableCfg) kv.TableCfg {
 		return tblConfig
 	}
 
+	return opts
+}
+
+func (opts MdbxOpts) WithEnvOptions(f EnvOptionsFunc) MdbxOpts {
+	opts.customEnvOtionsFn = f
 	return opts
 }
 
@@ -314,25 +318,6 @@ func (opts MdbxOpts) Open(ctx context.Context) (kv.RwDB, error) {
 		//	return nil, err
 		//}
 
-		// TODO(AD): Remove chaindata specific
-		if opts.label == kv.ChainDB {
-			txnDpInitial, err := env.GetOption(mdbx.OptTxnDpInitial)
-			if err != nil {
-				return nil, err
-			}
-
-			if err = env.SetOption(mdbx.OptTxnDpInitial, txnDpInitial*2); err != nil {
-				return nil, err
-			}
-			dpReserveLimit, err := env.GetOption(mdbx.OptDpReverseLimit)
-			if err != nil {
-				return nil, err
-			}
-			if err = env.SetOption(mdbx.OptDpReverseLimit, dpReserveLimit*2); err != nil {
-				return nil, err
-			}
-		}
-
 		// before env.Open() we don't know real pageSize. but will be implemented soon: https://gitflic.ru/project/erthink/libmdbx/issue/15
 		// but we want call all `SetOption` before env.Open(), because:
 		//   - after they will require rwtx-lock, which is not acceptable in ACCEDEE mode.
@@ -346,15 +331,10 @@ func (opts MdbxOpts) Open(ctx context.Context) (kv.RwDB, error) {
 			dirtySpace = opts.dirtySpace
 		} else {
 			dirtySpace = mmap.TotalMemory() / 42 // it's default of mdbx, but our package also supports cgroups and GOMEMLIMIT
-			// TODO(AD): Remove chaindata specific
 			// clamp to max size
-			const dirtySpaceMaxChainDB = uint64(1 * datasize.GB)
 			const dirtySpaceMaxDefault = uint64(128 * datasize.MB)
 
-			// TODO(AD): Remove chaindata specific
-			if opts.label == kv.ChainDB && dirtySpace > dirtySpaceMaxChainDB {
-				dirtySpace = dirtySpaceMaxChainDB
-			} else if opts.label != kv.ChainDB && dirtySpace > dirtySpaceMaxDefault {
+			if dirtySpace > dirtySpaceMaxDefault {
 				dirtySpace = dirtySpaceMaxDefault
 			}
 		}
@@ -366,6 +346,12 @@ func (opts MdbxOpts) Open(ctx context.Context) (kv.RwDB, error) {
 		// must be in the range from 12.5% (almost empty) to 50% (half empty)
 		// which corresponds to the range from 8192 and to 32768 in units respectively
 		if err = env.SetOption(mdbx.OptMergeThreshold16dot16Percent, opts.mergeThreshold); err != nil {
+			return nil, err
+		}
+	}
+
+	if opts.customEnvOtionsFn != nil {
+		if err = opts.customEnvOtionsFn(opts, env); err != nil {
 			return nil, err
 		}
 	}
