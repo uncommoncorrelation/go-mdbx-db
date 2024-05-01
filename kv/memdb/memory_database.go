@@ -28,7 +28,7 @@ import (
 )
 
 func New(tmpDir string, tblConfig kv.TableCfg) kv.RwDB {
-	return mdbx.NewMDBX(log.Noop()).InMem(tmpDir).WithTableCfg(tblConfig).MustOpen()
+	return mdbx.NewMDBX(log.NewNoop()).InMem(tmpDir).WithTableCfg(tblConfig).MustOpen()
 }
 
 func NewTestDB(tb testing.TB, tblConfig kv.TableCfg) kv.RwDB {

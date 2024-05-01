@@ -18,7 +18,7 @@ import (
 func baseAutoConversion(t *testing.T) (kv.RwDB, kv.RwTx, kv.RwCursor) {
 	t.Helper()
 	path := t.TempDir()
-	db := NewMDBX(log.Noop()).InMem(path).WithTableCfg(kv.ChaindataTablesCfg).MustOpen()
+	db := NewMDBX(log.NewNoop()).InMem(path).WithTableCfg(kv.ChaindataTablesCfg).MustOpen()
 
 	tx, err := db.BeginRw(context.Background())
 	require.NoError(t, err)
@@ -144,21 +144,21 @@ func TestAutoConversionSeekBothRange(t *testing.T) {
 }
 
 func TestBeginRoAfterClose(t *testing.T) {
-	db := NewMDBX(log.Noop()).InMem(t.TempDir()).WithTableCfg(kv.ChaindataTablesCfg).MustOpen()
+	db := NewMDBX(log.NewNoop()).InMem(t.TempDir()).WithTableCfg(kv.ChaindataTablesCfg).MustOpen()
 	db.Close()
 	_, err := db.BeginRo(context.Background())
 	require.ErrorContains(t, err, "closed")
 }
 
 func TestBeginRwAfterClose(t *testing.T) {
-	db := NewMDBX(log.Noop()).InMem(t.TempDir()).WithTableCfg(kv.ChaindataTablesCfg).MustOpen()
+	db := NewMDBX(log.NewNoop()).InMem(t.TempDir()).WithTableCfg(kv.ChaindataTablesCfg).MustOpen()
 	db.Close()
 	_, err := db.BeginRw(context.Background())
 	require.ErrorContains(t, err, "closed")
 }
 
 func TestBeginRoWithDoneContext(t *testing.T) {
-	db := NewMDBX(log.Noop()).InMem(t.TempDir()).WithTableCfg(kv.ChaindataTablesCfg).MustOpen()
+	db := NewMDBX(log.NewNoop()).InMem(t.TempDir()).WithTableCfg(kv.ChaindataTablesCfg).MustOpen()
 	defer db.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -167,7 +167,7 @@ func TestBeginRoWithDoneContext(t *testing.T) {
 }
 
 func TestBeginRwWithDoneContext(t *testing.T) {
-	db := NewMDBX(log.Noop()).InMem(t.TempDir()).WithTableCfg(kv.ChaindataTablesCfg).MustOpen()
+	db := NewMDBX(log.NewNoop()).InMem(t.TempDir()).WithTableCfg(kv.ChaindataTablesCfg).MustOpen()
 	defer db.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -182,7 +182,7 @@ func testCloseWaitsAfterTxBegin(
 	txEndFunc func(kv.StatelessReadTx) error,
 ) {
 	t.Helper()
-	db := NewMDBX(log.Noop()).InMem(t.TempDir()).WithTableCfg(kv.ChaindataTablesCfg).MustOpen()
+	db := NewMDBX(log.NewNoop()).InMem(t.TempDir()).WithTableCfg(kv.ChaindataTablesCfg).MustOpen()
 	var txs []kv.StatelessReadTx
 	for i := 0; i < count; i++ {
 		tx, err := txBeginFunc(db)

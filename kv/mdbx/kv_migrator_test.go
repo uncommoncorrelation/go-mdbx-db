@@ -32,13 +32,13 @@ import (
 
 func TestReadOnlyMode(t *testing.T) {
 	path := t.TempDir()
-	db1 := mdbx.NewMDBX(log.Noop()).Path(path).MapSize(16 * datasize.MB).WithTableCfg(kv.TableCfg{
+	db1 := mdbx.NewMDBX(log.NewNoop()).Path(path).MapSize(16 * datasize.MB).WithTableCfg(kv.TableCfg{
 		kv.Headers: kv.TableCfgItem{},
 	}).MustOpen()
 	db1.Close()
 	time.Sleep(10 * time.Millisecond) // win sometime need time to close file
 
-	db2 := mdbx.NewMDBX(log.Noop()).Readonly().Path(path).MapSize(16 * datasize.MB).WithTableCfg(kv.TableCfg{
+	db2 := mdbx.NewMDBX(log.NewNoop()).Readonly().Path(path).MapSize(16 * datasize.MB).WithTableCfg(kv.TableCfg{
 		kv.Headers: kv.TableCfgItem{},
 	}).MustOpen()
 	defer db2.Close()
