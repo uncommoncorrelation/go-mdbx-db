@@ -4,7 +4,7 @@ go 1.21.5
 
 require (
 	github.com/containerd/cgroups/v3 v3.0.3
-	github.com/erigontech/mdbx-go v0.27.22
+	github.com/erigontech/mdbx-go v0.38.4
 	github.com/go-stack/stack v1.8.1
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58
 	github.com/stretchr/testify v1.8.4
@@ -20,6 +20,7 @@ require (
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/godbus/dbus/v5 v5.0.4 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
+	github.com/ianlancetaylor/cgosymbolizer v0.0.0-20240503222823-736c933a666d // indirect
 	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/opencontainers/runtime-spec v1.0.2 // indirect
 	github.com/prometheus/common v0.45.0 // indirect
